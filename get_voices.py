@@ -12,7 +12,7 @@ import argparse, csv, json, os, sys, time
 import urllib.error, urllib.parse, urllib.request
 
 URL = "https://api.elevenlabs.io/v1/shared-voices"
-FIELDS = ["name", "description", "preview_url"]
+FIELDS = ["voice_id", "name", "description", "preview_url"]
 
 
 def fetch_page(key, params, retries=4):
