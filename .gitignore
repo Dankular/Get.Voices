@@ -1,3 +1,4 @@
 voices*.csv
 *.json
 .env
+*.jsonl
