@@ -81,6 +81,7 @@ def main():
     ap.add_argument("--accent")
     ap.add_argument("--age")
     ap.add_argument("--search")
+    ap.add_argument("--sort", choices=["trending", "created_date", "usage_character_count_1y", "cloned_by_count"])
     ap.add_argument("--saved", nargs="?", const="saved", metavar="TYPE",
                     help="list the account's own voices (/v2/voices) instead of the public library; "
                          "TYPE is the voice_type filter, default 'saved'")
@@ -95,7 +96,7 @@ def main():
         sys.exit("Set ELEVENLABS_API_KEY")
     filters = {k: v for k, v in {
         "use_cases": a.use_case, "category": a.category, "language": a.language,
-        "gender": a.gender, "accent": a.accent, "age": a.age, "search": a.search,
+        "gender": a.gender, "sort": a.sort, "accent": a.accent, "age": a.age, "search": a.search,
     }.items() if v}
 
     out = sys.stdout if a.output == "-" else open(a.output, "w", newline="", encoding="utf-8")
