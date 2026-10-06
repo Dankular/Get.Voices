@@ -48,6 +48,30 @@ def iter_voices(key, filters, page_size, limit):
         page += 1
 
 
+def iter_saved(key, voice_type, page_size, limit):
+    """Voices in the account's own list via GET /v2/voices (token-paginated)."""
+    token, n = None, 0
+    while True:
+        params = {"page_size": page_size, "voice_type": voice_type}
+        if token:
+            params["next_page_token"] = token
+        req = urllib.request.Request("https://api.elevenlabs.io/v2/voices?" + urllib.parse.urlencode(params),
+                                     headers={"xi-api-key": key})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                data = json.load(r)
+        except urllib.error.HTTPError as e:
+            raise SystemExit(f"HTTP {e.code}: {e.read().decode(errors='replace')[:300]}")
+        for v in data.get("voices", []):
+            yield {f: v.get(f) for f in FIELDS}
+            n += 1
+            if limit and n >= limit:
+                return
+        token = data.get("next_page_token")
+        if not data.get("has_more") or not token:
+            return
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--use-case", help="e.g. social_media, narration, characters_animation, conversational")
@@ -57,6 +81,9 @@ def main():
     ap.add_argument("--accent")
     ap.add_argument("--age")
     ap.add_argument("--search")
+    ap.add_argument("--saved", nargs="?", const="saved", metavar="TYPE",
+                    help="list the account's own voices (/v2/voices) instead of the public library; "
+                         "TYPE is the voice_type filter, default 'saved'")
     ap.add_argument("--max", type=int, default=0, help="stop after N voices (0 = all)")
     ap.add_argument("--page-size", type=int, default=100)
     ap.add_argument("--format", choices=["csv", "json", "jsonl"], default="csv")
@@ -72,7 +99,8 @@ def main():
     }.items() if v}
 
     out = sys.stdout if a.output == "-" else open(a.output, "w", newline="", encoding="utf-8")
-    rows = iter_voices(key, filters, a.page_size, a.max)
+    rows = (iter_saved(key, a.saved, a.page_size, a.max) if a.saved
+            else iter_voices(key, filters, a.page_size, a.max))
     count = 0
     if a.format == "csv":
         w = csv.DictWriter(out, fieldnames=FIELDS)
